@@ -77,10 +77,18 @@ def detect(cam=0, thres=0.7, video_path=None):
 
 if __name__ == "__main__":
     # Example usage: python script.py --video_path "path/to/video.mp4"
-    import argparse
+    # import argparse
+    #
+    # parser = argparse.ArgumentParser(description='Facial recognition system.')
+    # parser.add_argument('--video_path', type=str, help='Path to the video file.', default=None)
+    # args = parser.parse_args()
+    # from facenet_pytorch import InceptionResnetV1
+    #
+    # model = InceptionResnetV1(pretrained='vggface2').eval()
+    # print(model)
+    #
+    # detect(video_path=args.video_path)
 
-    parser = argparse.ArgumentParser(description='Facial recognition system.')
-    parser.add_argument('--video_path', type=str, help='Path to the video file.', default=None)
-    args = parser.parse_args()
-
-    detect(video_path=args.video_path)
+    video_path = 'test.mp4'
+    output_path = './seprated'
+    split_video(video_path, output_path)
