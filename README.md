@@ -1,0 +1,86 @@
+# Friends Celebrity Recognition
+
+## Overview
+
+This repository contains the implementation for a facial recognition system designed to identify characters from the TV show "Friends". It includes a training script for both binary and multiclass classifiers, a baseline model using nearest neighbor, and an application for tagging detected faces in videos.
+
+## Directory Structure
+
+- `data/`: Contains cropped images of "Friends" characters for training, validation, and testing. Subfolder names are used as labels.
+- `saved_models/`: Stores the trained models.
+- `samples/`: Example images for the baseline nearest neighbor model.
+- `app.py`: Main entry point for running face tagging on videos.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- pipenv
+
+## Setup
+
+1. Clone the repository and navigate to its root directory.
+2. Run `pipenv install` to set up the environment.
+3. Activate the environment with `pipenv shell`.
+
+## Running the Application
+
+- To run the main application on a video, use:
+  ```
+  python app.py [video_path]
+  ```
+  This will run MTCNN face detection and apply both the trained models and the baseline model to tag the detected faces.
+
+## Training and Evaluation
+
+- To train and evaluate the models, run:
+  ```
+  python train_and_eval.py -t
+  ```
+  or
+  ```
+  python train_and_eval.py --train
+  ```
+  This will train & save the models, and evaluate them against the baseline model.
+
+- To skip training and only run evaluation, omit `-t` or `--train`:
+  ```
+  python train_and_eval.py
+  ```
+
+### Eval Results as of Current Commit
+
+#### Multiclass Performance
+
+##### Baseline Model
+
+|  class   | accuracy | precision | recall  | f1_score |
+|----------|----------|-----------|---------|----------|
+| average  | 63.08%   | 63.08%    | 63.08%  | 63.08%   |
+| unknown  | 100.00%  | 19.66%    | 100.00% | 32.86%   |
+| chandler | 57.98%   | 100.00%   | 57.98%  | 73.40%   |
+| joey     | 78.95%   | 88.24%    | 78.95%  | 83.33%   |
+| monica   | 26.92%   | 100.00%   | 26.92%  | 42.42%   |
+| phoebe   | 25.00%   | 100.00%   | 25.00%  | 40.00%   |
+| rachel   | 58.82%   | 100.00%   | 58.82%  | 74.07%   |
+| ross     | 100.00%  | 100.00%   | 100.00% | 100.00%  |
+
+#### Custom Trained Model
+
+|  class   | accuracy | precision | recall  | f1_score |
+|----------|----------|-----------|---------|----------|
+| average  | 98.46%   | 98.46%    | 98.46%  | 98.46%   |
+| unknown  | 95.65%   | 95.65%    | 95.65%  | 95.65%   |
+| chandler | 99.16%   | 100.00%   | 99.16%  | 99.58%   |
+| joey     | 100.00%  | 100.00%   | 100.00% | 100.00%  |
+| monica   | 100.00%  | 92.86%    | 100.00% | 96.30%   |
+| phoebe   | 91.67%   | 100.00%   | 91.67%  | 95.65%   |
+| rachel   | 100.00%  | 100.00%   | 100.00% | 100.00%  |
+| ross     | 96.30%   | 96.30%    | 96.30%  | 96.30%   |
+
+#### Binary (Chandler vs non-Chandler) performance:
+
+|        model       | accuracy | precision | recall  | f1_score |
+|--------------------|----------|-----------|---------|----------|
+| baseline           | 80.77%   | 100.00%   | 57.98%  | 73.40%   |
+| friends_classifier | 99.62%   | 100.00%   | 99.16%  | 99.58%   |
+| chandler_detector  | 100.00%  | 100.00%   | 100.00% | 100.00%  |
