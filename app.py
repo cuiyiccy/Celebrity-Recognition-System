@@ -2,10 +2,11 @@ import sys
 import cv2
 import torch
 from constants import (
-    SHARED_MTCNN,
-    SHARE_RESNET,
-    FRIENDS_CLASSIFIER_PATH,
     CHANDLER_DETECTOR_PATH,
+    DEVICE,
+    FRIENDS_CLASSIFIER_PATH,
+    SHARE_RESNET,
+    SHARED_MTCNN,
 )
 from model import BaselineModel, MulticlassClassifier, BinaryClassifier
 
@@ -24,7 +25,7 @@ def annotateVideo(video_source, models, detection_threshold=0.9):
         if faces is None:
             continue
 
-        embeddings = SHARE_RESNET(faces)
+        embeddings = SHARE_RESNET(faces.to(DEVICE))  # type: ignore
         predictions = {
             name: model.predict(embeddings) for name, model in models.items()
         }
@@ -74,11 +75,20 @@ def annotateVideo(video_source, models, detection_threshold=0.9):
 if __name__ == "__main__":
     video_source = sys.argv[1] if len(sys.argv) > 1 else "./videos/test00.mov"
 
+    friends_classifier = torch.load(
+        FRIENDS_CLASSIFIER_PATH, map_location=DEVICE
+    ).eval()
+    chandler_detector = torch.load(
+        CHANDLER_DETECTOR_PATH, map_location=DEVICE
+    ).eval()
+    friends_classifier.to(DEVICE)
+    chandler_detector.to(DEVICE)
+
     annotateVideo(
         video_source,
         {
             "baseline": BaselineModel(),
-            "friends_classifier": torch.load(FRIENDS_CLASSIFIER_PATH).eval(),
-            "chandler_detector": torch.load(CHANDLER_DETECTOR_PATH).eval(),
+            "friends_classifier": friends_classifier,
+            "chandler_detector": chandler_detector,
         },
     )

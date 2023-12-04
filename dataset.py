@@ -6,38 +6,40 @@ facenet_pytorch, and create a dataset compatible with PyTorch's `DataLoader`.
 """
 
 import os
-from typing import Any, Callable, List, Tuple, Optional
+from typing import Any, Callable, List, Tuple
 
 import cv2
 import torch
 from constants import (
+    DEVICE,
+    INPUT_IMAGE_SIZE,
     LABELS,
     LABELS_MAP,
-    DEVICE,
-    SHARED_MTCNN,
     SHARE_RESNET,
-    INPUT_IMAGE_SIZE,
+    SHARED_MTCNN,
 )
 
 
-def load_and_preprocess_image(img_path: str) -> Optional[torch.Tensor]:
+def encode_image(img_path: str) -> torch.Tensor:
     """
-    Loads and preprocesses an image for facial recognition.
+    Loads, preprocesses, and encodes an image for facial recognition.
 
     The function reads an image from a given path, then uses the shared MTCNN
     model for face detection and preprocessing. If face detection fails, it
-    manually resizes and normalizes the image. The function also handles cases
-    where multiple faces are detected by returning None.
+    manually resizes and normalizes the image. Finally, it uses ResNet to
+    encode the preprocessed images.
+
+    When mltiple faces are detected, the function reports the problematic
+    input and exits.
 
     Args:
         img_path: The file path of the image to be processed.
 
     Returns:
-        A tensor representing the preprocessed image, or None if multiple faces
-    are detected.
+        A tensor representing the image embedding.
     """
     img = cv2.imread(img_path)
-    preprocessed_img = SHARED_MTCNN(torch.Tensor(img).to(DEVICE))
+    preprocessed_img = SHARED_MTCNN(torch.Tensor(img))
 
     # Manually process the image if MTCNN detection failed.
     if preprocessed_img is None:
@@ -51,9 +53,12 @@ def load_and_preprocess_image(img_path: str) -> Optional[torch.Tensor]:
     # Bad example: multiple faces detected.
     elif preprocessed_img.size()[0] != 1:
         print(f"Detected multiple faces, skipping bad example: {img_path}")
-        return None
+        exit(1)
 
-    return preprocessed_img
+    embedding = SHARE_RESNET(preprocessed_img.to(DEVICE)).squeeze()
+
+    # Move to main RAM for caching.
+    return embedding.detach().cpu()
 
 
 class FriendsDataset(torch.utils.data.Dataset):
@@ -65,11 +70,11 @@ class FriendsDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         img_dir: str,
-        loader_func: Callable[
-            [Any], Optional[torch.Tensor]
-        ] = load_and_preprocess_image,
-        encode_func: Callable[[torch.Tensor], torch.Tensor] = SHARE_RESNET,
+        cache_all: bool = True,
+        transform: Callable[[Any], torch.Tensor] = encode_image,
     ) -> None:
+        self.cache_all = cache_all
+        self.transform = transform
         self.labels: List[int] = []
         self.images: List[str] = []
         self.embeddings: List[torch.Tensor] = []
@@ -81,12 +86,10 @@ class FriendsDataset(torch.utils.data.Dataset):
                 if i.split(".")[-1] not in ("jpg", "jpeg", "png"):
                     continue
                 img_path = os.path.join(sub_dir, i)
-                img = loader_func(img_path)
-                if img is None:
-                    continue
                 self.labels.append(LABELS_MAP[d])
                 self.images.append(os.path.join(sub_dir, i))
-                self.embeddings.append(encode_func(img).squeeze())
+                if cache_all:
+                    self.embeddings.append(transform(img_path))
 
     def __len__(self) -> int:
         """Returns the number of items in the dataset."""
@@ -103,7 +106,13 @@ class FriendsDataset(torch.utils.data.Dataset):
             A tuple containing the image tensor, its corresponding label, and
         the path of the raw image.
         """
-        return self.embeddings[idx], self.labels[idx], self.images[idx]
+        embeddings = (
+            self.embeddings[idx]
+            if self.cache_all
+            else self.transform(self.images[idx])
+        )
+
+        return embeddings, self.labels[idx], self.images[idx]
 
 
 # Test only

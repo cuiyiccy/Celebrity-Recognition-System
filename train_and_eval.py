@@ -2,11 +2,11 @@ import sys
 import torch
 import torcheval.metrics.functional as metric
 from constants import (
+    CHANDLER_DETECTOR_PATH,
     DEVICE,
     FRIENDS_CLASSIFIER_PATH,
-    CHANDLER_DETECTOR_PATH,
-    LABELS_MAP,
     LABELS,
+    LABELS_MAP,
 )
 from dataset import FriendsDataset
 from model import BinaryClassifier, MulticlassClassifier, BaselineModel
@@ -39,10 +39,10 @@ class ModelTrainer:
         """
         self.model.train(True)
         self.optimizer.zero_grad()
-        outputs = self.model(inputs.detach().to(DEVICE))
+        outputs = self.model(inputs.detach())
 
         # Compute the loss and its gradients.
-        loss = self.loss_fn(outputs, labels.detach().to(DEVICE))
+        loss = self.loss_fn(outputs, labels.detach())
         loss.backward()
 
         # Adjust learning weights.
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print(f"Using device: {DEVICE}.")
 
     trainset, testset = torch.utils.data.random_split(
-        FriendsDataset(img_dir="data"),
+        FriendsDataset(img_dir="data", cache_all=False),
         (0.8, 0.2),
         generator=torch.Generator().manual_seed(0),
     )
@@ -86,25 +86,27 @@ if __name__ == "__main__":
 
         friends_classifier = MulticlassClassifier()
         chandler_detector = BinaryClassifier()
+        friends_classifier.to(DEVICE)
+        chandler_detector.to(DEVICE)
 
         friends_classifier_trainer = ModelTrainer(
             "friends_classifier",
             friends_classifier,
             torch.nn.CrossEntropyLoss(),
-            torch.optim.Adam(friends_classifier.parameters(), lr=0.001),
+            torch.optim.Adam(friends_classifier.parameters(), lr=0.0005),
         )
         chandler_detector_trainer = ModelTrainer(
             "chandler_detector",
             chandler_detector,
             torch.nn.BCELoss(),
-            torch.optim.Adam(chandler_detector.parameters(), lr=0.001),
+            torch.optim.Adam(chandler_detector.parameters(), lr=0.0005),
         )
 
         for epoch in range(1000):
             print(f"Epoch: {epoch}")
             for i, (inputs, labels, _) in enumerate(training_loader):
-                inputs = inputs
-                labels = labels
+                inputs = inputs.to(DEVICE)
+                labels = labels.to(DEVICE)
                 friends_classifier_trainer.train(inputs, labels)
 
                 is_chandler = labels.float()
@@ -122,18 +124,28 @@ if __name__ == "__main__":
 
     # Validation starts
     baseline = BaselineModel()
-    friends_classifier = torch.load(FRIENDS_CLASSIFIER_PATH).eval()
-    chandler_detector = torch.load(CHANDLER_DETECTOR_PATH).eval()
+    friends_classifier = torch.load(
+        FRIENDS_CLASSIFIER_PATH, map_location=DEVICE
+    ).eval()
+    chandler_detector = torch.load(
+        CHANDLER_DETECTOR_PATH, map_location=DEVICE
+    ).eval()
+    friends_classifier.to(DEVICE)
+    chandler_detector.to(DEVICE)
 
     testing_loader = torch.utils.data.DataLoader(
         testset, batch_size=len(testset), shuffle=True
     )
     with torch.no_grad():  # No gradients needed for validation
         inputs, labels, images = next(iter(testing_loader))
+        inputs = inputs.to(DEVICE)
+        labels = labels.to(DEVICE)
 
-        pred_baseline = torch.Tensor(
-            [LABELS_MAP[p] for p in baseline.predict(inputs)]
-        ).long()
+        pred_baseline = (
+            torch.Tensor([LABELS_MAP[p] for p in baseline.predict(inputs)])
+            .long()
+            .to(DEVICE)
+        )
         pred_friends_classifier = friends_classifier(inputs)
 
         print("------------------------------")

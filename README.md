@@ -20,6 +20,7 @@ This repository contains the implementation for a facial recognition system desi
 
 1. Clone the repository and navigate to its root directory.
 2. Run `pipenv install` to set up the environment.
+  - To use GPUs, you may need to manually install `pytorch` by following [this instruction](https://pytorch.org/get-started/locally/).
 3. Activate the environment with `pipenv shell`.
 
 ## Running the Application
@@ -47,6 +48,12 @@ This repository contains the implementation for a facial recognition system desi
   python train_and_eval.py
   ```
 
+- If you are running into OOM issue when loading the dataset, try disabling `cache_all` in `train_and_eval.py`:
+
+  ```
+  FriendsDataset(img_dir="data", cache_all=False)
+  ```
+
 ### Eval Results as of Current Commit
 
 #### Multiclass Performance
@@ -68,14 +75,14 @@ This repository contains the implementation for a facial recognition system desi
 
 |  class   | accuracy | precision | recall  | f1_score |
 |----------|----------|-----------|---------|----------|
-| average  | 98.46%   | 98.46%    | 98.46%  | 98.46%   |
-| unknown  | 95.65%   | 95.65%    | 95.65%  | 95.65%   |
+| average  | 99.23%   | 99.23%    | 99.23%  | 99.23%   |
+| unknown  | 95.65%   | 100.00%   | 95.65%  | 97.78%   |
 | chandler | 99.16%   | 100.00%   | 99.16%  | 99.58%   |
 | joey     | 100.00%  | 100.00%   | 100.00% | 100.00%  |
-| monica   | 100.00%  | 92.86%    | 100.00% | 96.30%   |
-| phoebe   | 91.67%   | 100.00%   | 91.67%  | 95.65%   |
-| rachel   | 100.00%  | 100.00%   | 100.00% | 100.00%  |
-| ross     | 96.30%   | 96.30%    | 96.30%  | 96.30%   |
+| monica   | 100.00%  | 96.30%    | 100.00% | 98.11%   |
+| phoebe   | 100.00%  | 100.00%   | 100.00% | 100.00%  |
+| rachel   | 100.00%  | 97.14%    | 100.00% | 98.55%   |
+| ross     | 100.00%  | 100.00%   | 100.00% | 100.00%  |
 
 #### Binary (Chandler vs non-Chandler) performance:
 
