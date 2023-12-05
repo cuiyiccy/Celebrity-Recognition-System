@@ -7,9 +7,13 @@ This repository contains the implementation for a facial recognition system desi
 ## Directory Structure
 
 - `data/`: Contains cropped images of "Friends" characters for training, validation, and testing. Subfolder names are used as labels.
-- `saved_models/`: Stores the trained models.
+- `results/`: Result video with annotation of celebrity.
 - `samples/`: Example images for the baseline nearest neighbor model.
+- `saved_models/`: Stores the trained models.
 - `app.py`: Main entry point for running face tagging on videos.
+- `train_and_eval.py`: Main entry point for training and evaluating the models.
+- `project_presentation.mp4`: A video presentation to introduce the model and experience.
+- `Final Report - Celebrity Recognition.pdf`: Detailed report about the project.
 
 ## Prerequisites
 
